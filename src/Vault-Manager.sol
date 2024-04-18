@@ -17,7 +17,7 @@ contract VaultManager {
 
     event VaultAdded(uint256 id, address owner);
     event VaultDeposit(uint256 id, address owner, uint256 amount);
-    event VaultWithdraw();
+    event VaultWithdraw(uint256 id, address owner, uint256 amount);
 
     modifier onlyOwner (uint256 _vaultId){
         if (vaults[_vaultId].owner != msg.sender){
@@ -27,26 +27,35 @@ contract VaultManager {
         _;
     }
 
-    function addVault(uint256 vaultIndex, string calldata _name, string _owner) public view{
+    function addVault(string calldata _name) public returns (uint256 vaultId){
         Vault memory vault = Vault({
             name: _name,
-            owner: _owner
+            owner: msg.sender,
+            balance: 0
         });
 
+        vaults.push(vault);
+        vaultId = vaults.length - 1;
 
-        emit VaultAdded(id, owner);
+        vaultsByOwner[msg.sender].push(vaultId);
+
+        emit VaultAdded(vaultId, msg.sender);
     }
 
-    function deposit(uint256 _vaultId) public view onlyOwner(_vaultId) {
-        vaults[_vaultId];
+    function deposit(uint256 _vaultId) payable public onlyOwner(_vaultId) {
+        vaults[_vaultId].balance = vaults[_vaultId].balance + msg.value;
 
-        emit VaultDeposit(id, owner, amount);
+        emit VaultDeposit(_vaultId, msg.sender, msg.value);
     }
 
     function withdraw(uint256 _vaultId, uint256 amount) public onlyOwner(_vaultId){
+        require(vaults[_vaultId].balance >= amount, "Not enough funds in the vault :(");
 
+        vaults[_vaultId].balance = vaults[_vaultId].balance - amount;
+
+        payable(vaults[_vaultId].owner).transfer(amount);
         
-        emit VaultWithdraw();
+        emit VaultWithdraw(_vaultId, msg.sender, amount);
     }
 
     function getVaultsLength() public view returns (uint256) {
@@ -58,8 +67,8 @@ contract VaultManager {
         owner = vaults[_vaultId].owner;
     }
 
-    function getMyVaults() public view {
-
+    function getMyVaults() public view returns (uint256[] memory){
+        return vaultsByOwner[msg.sender];
     }
 
 }
