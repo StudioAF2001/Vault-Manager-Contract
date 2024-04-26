@@ -8,6 +8,9 @@ contract VaultManagerScript is Script {
     function setUp() public {}
 
     function run() public {
-        vm.broadcast();
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        VaultManager vaultManager = new VaultManager();
+        vm.stopBroadcast();
     }
 }
